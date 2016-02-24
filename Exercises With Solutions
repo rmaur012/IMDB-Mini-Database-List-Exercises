@@ -1,0 +1,181 @@
+//This code lodes some movie data which was extracted from the IMDB database (check the included file "MovieSmall.txt"). 
+// !!! You may need to play with the path of MovieSmall.txt !!!
+//Otherwise, leave this code alone.
+let readLines filePath = System.IO.File.ReadLines(filePath);
+let lines = Seq.toList (readLines "C:(insert path to "MovieSmall.txt" here)MovieSmall.txt");
+let lines2 = List.map (fun (s:string) -> Array.toList (s.Split([|'\t'|]))) lines;
+let imdb = List.map (fun (l1::l2::l3::l4::l5::l6::[]) -> [l1]::[l2]::[l3]:: (Array.toList ((l4:string).Split[|','|])) ::[l5]:: (Array.toList ((l6:string).Split[|','|])) ::[]) lines2;;
+
+//1. [5p] The imdb identifier points to the movie data. What is the structure/type of this data (ex: list)?
+
+Solution:
+
+The structure/type of “imdb” is string list list list, so it is a list of lists of lists of strings. While “lines” is of type string list and “lines2” is of type string list list.
+
+//2. [5p] Here's a recursive function that traverses imdb and finds the rating of a movie. However, there's a small
+//   error in the code. Fix it. (HINT: think about types: what is the function supposed to return? What is the type of 'title'? What is the type of 'c'?)
+//   [5p] Explain why you are getting the "Incomplete pattern match warning". Can you fix it?
+let rec get_rating movie = function
+    | [] -> "Not found";
+    | [[title]; b; c; d; e; f]::t -> if title=movie then c else get_rating movie t;
+
+get_rating "Batman Begins" imdb;
+
+Solution:
+A. let rec get_rating movie = function
+       | [] -> "Not found";
+       | [[title]; b; [c]; d; e; f]::t -> if title=movie then c else get_rating movie t;
+
+B. We are getting the "Incomplete pattern match warning" because so far, none of the cases we have for 
+the function covers when a sublist has 7 elements. One way to account for is, if we are assuming that a movie 
+cannot be found unless it has those specific 6 elements (in other words if its more or less than 6, it should not be found), 
+then we can add an extra case that will execute if no sublist is found to have 6 elements, like so:
+
+let rec get_rating movie = function
+  | [] -> "Not found";
+  | [[title]; b; [c]; d; e; f :: g]::t -> if title=movie then c else get_rating movie t       
+  | _ -> "Not found";;
+
+
+//3. [5p] Rewrite the function above to use match instead of function. (HINT: how many parameters does get_rating take? What are they called?)
+
+Solution:
+let rec get_rating list movie = 
+    match (list) with
+    | [] -> "Not found";
+    | [[title]; b; [c]; d; e; f]::t -> if title=movie then c else get_rating t movie 
+    | _ -> "Not found";;
+
+
+//4. [5p] Let's rewrite the function above with a different pattern matching. Implement the function (???) so that it works, 
+//       without changing anything of the given code. (HINT: you may use List.?? functions or 'match to' expressions)
+let rec get_rating_v2 movie = function
+    | [] -> "Not found";
+    | [a; b; c; d; e; f]::t -> ???;
+
+
+Solution: 
+let rec get_rating_v2 movie = function
+    | [] -> "Not found";
+    | [a; b; c; d; e; f]::t -> if (List.head a)=movie then (List.head c) else get_rating_v2 movie t;;
+
+
+//5. [5p] Same as four 4.
+let rec get_rating_v2 movie = function
+    | [] -> "Not found";
+    | h::t -> ???;
+
+Solution:
+let rec get_rating_v2 movie = function
+    | [] -> "Not found";
+    | h::t -> if (List.head (List.head h))=movie then (List.head (List.head (List.tail (List.tail (h))))) else get_rating_v2 movie t;;
+
+
+
+//6. Here's a recursive function that keeps only data of movies newer than which_year
+let rec year_filter which_year = function
+        | [] -> []
+        | [a;[year];c;d;e;f]::t -> if year>which_year then [a;[year];c;d;e;f]::(year_filter which_year t) else (year_filter which_year t)
+        | h :: t -> (year_filter which_year t);
+
+// a. [5p] The line below has a type error. Fix it (don't touch the function above). 
+let new_movies = year_filter 2000 imdb;
+
+Solution:
+To fix the error, we must make the 2000 into a string. The new expression is:
+
+let new_movies = year_filter “2000” imdb;;
+
+
+// b. [5p] Rewrite the function using 'match to' expressions rather than the 'function' form.
+Solution:
+let rec year_filter which_year list =
+    match (list) with
+    | [] -> []
+    | [a;[year];c;d;e;f]::t -> if year>which_year then [a;[year];c;d;e;f]::(year_filter which_year t) else (year_filter which_year t)
+    | h :: t -> (year_filter which_year t);;
+
+
+
+// 7. [10p]. Use the year_filter function as a model and write a rating_filter function. You will need the stringToFloat function.
+
+let stringToFloat (s:string) = float s;
+
+let rating_filter which_rating = function 
+        | ?
+        | ?
+        | ?
+
+Solution: 
+let rating_filter which_rating = function 
+        | [] -> [];
+        | [a;b;[rating];d;e;f]::t -> if (stringToFloat(rating))>(stringToFloat(which_rating)) then [a;b;[rating];d;e;f]::(rating_filter which_rating t) else (rating_filter which_rating t)
+        | h :: t -> (rating_filter which_rating t);
+
+rating_filter 9. imdb;
+
+// 8. [15p] Write a function 'allMovies actor' which lists all movies that the actor acted in.
+
+Solution:
+The function “findActor” is a helper function that checks a list of strings to see if a certain string (in this case, the name of an actor/actress) is in the list. This function is used in question 4, 5, and 6.
+
+let rec findActor act = function
+    | [] -> false
+    | a::t -> if a=act then true else findActor act t;;
+
+let rec allMovies actor = function
+    | [] -> []
+    | [[movie];b;c;d;e;people]::t -> if (findActor actor people) then movie::(allMovies actor t) else (allMovies actor t)
+    | h :: t -> (allMovies actor t);;
+
+
+// 9. [15p] Write a function 'commonMovies actor1 actor2' which lists all movies that two actors have been together in. 
+
+Solution:
+let rec findActor act = function
+    | [] -> false
+    | a::t -> if a=act then true else findActor act t;;
+
+let rec commonMovies actor1 actor2 = function
+    | [] -> []
+    | [[movie];b;c;d;e;cast]::t -> if findActor actor1 cast then (if (findActor actor2 cast) then movie::(commonMovies actor1 actor2 t) else (commonMovies actor1 actor2 t)) else (commonMovies actor1 actor2 t)
+    | h :: t -> (commonMovies actor1 actor2 t);;
+
+
+
+// 10. [20p] Write a function 'preferredGenre actor' which lists the most prevalent genre of the movies that the actor has been in.
+
+Solution:
+let rec findActor act = function
+    | [] -> false
+    | a::t -> if a=act then true else findActor act t;;
+
+let preferredGenre actor list = 
+    let rec getGenres actor = function
+        | [] -> []
+        | [a;b;c;d;e;cast]::t -> if findActor actor cast then d@getGenres actor t else getGenres actor t
+        | h :: t -> getGenres actor t
+    let rec countGenre x = function
+        | [] -> 0
+        | a::t -> if a=x then 1+countGenre x t else countGenre x t
+    let rec bestGenre g gcount = function
+        | [] -> g 
+        | a::t -> if gcount> ((countGenre a t)+1) then bestGenre g gcount t else bestGenre a ((countGenre a t)+1) t
+    bestGenre (List.head (getGenres actor list)) (countGenre (List.head getGenres actor list) (getGenres actor list)) (getGenres actor list);;
+
+
+Explanation for Question 10:
+
+“getGenres” accumulates all the genres from every move that a specified actor/actress is in into one list by appending 
+the list of genres from each movie together.
+
+“countGenre” takes in a genre and goes through the list of genres generated from the “getGenres” function to count 
+how many times that specific genre is in the list. The genre with the most count is the actor’s/actress’ preferred genre.
+
+“bestGenre” will go through the list made by “getGenres” comparing the genre with the highest count so far (g) 
+to the next in the list. It will go through the list holding the genre and that genre’s count. When it reaches the end, 
+it will return the genre that has the most count, which is the genre that has appeared the most in the “getGenres” list.
+
+To put this in simplest terms, the function will get the list of genres by getting the genres of all the movies the actor 
+is in. It will then go through the list comparing genres by how many times they are in the list (thus why repetition is allowed). 
+It will return the genre with the highest count and, thus, the preferred genre.
